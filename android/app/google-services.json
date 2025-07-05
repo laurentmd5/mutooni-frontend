@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1018592035498",
+    "project_id": "mutooni-a0a26",
+    "storage_bucket": "mutooni-a0a26.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1018592035498:android:e6929cf4f866a84a0386d3",
+        "android_client_info": {
+          "package_name": "com.laurent.mutooni"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB_hpsA7aVqDtLwDyB75WphRJc-r0RxKbM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
