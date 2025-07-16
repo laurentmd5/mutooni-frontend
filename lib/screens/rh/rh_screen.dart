@@ -1,24 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mutooni_frontend/widgets/main_layout.dart';
-import 'package:mutooni_frontend/providers/rh_provider.dart';
-//import 'package:mutooni_frontend/models/employe.dart';
+import '../../providers/rh_provider.dart';
+import '../../widgets/main_layout.dart';
 import 'employe_form.dart';
-import 'package:go_router/go_router.dart';
+import 'salaires_screen.dart';
 
-
-class RhScreen extends ConsumerWidget {
+class RhScreen extends ConsumerStatefulWidget {
   const RhScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final employes = ref.watch(rhProvider);
-    final selectedIndex = 4; // RH est à l'index 4
+  ConsumerState<RhScreen> createState() => _RhScreenState();
+}
 
+class _RhScreenState extends ConsumerState<RhScreen> {
+  String _search = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final employes = ref.watch(rhProvider(_search));
     return MainLayout(
-      selectedIndex: selectedIndex,
-      onItemTap: (i) => _navigate(context, i),
+      selectedIndex: 5,
       title: 'Ressources Humaines',
+      onItemTap: (i) {},
       actions: [
         IconButton(
           icon: const Icon(Icons.add),
@@ -28,31 +31,61 @@ class RhScreen extends ConsumerWidget {
           ),
         ),
       ],
-      child: employes.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Erreur: $err')),
-        data: (employes) => ListView.separated(
-          itemCount: employes.length,
-          separatorBuilder: (_, __) => const Divider(),
-          itemBuilder: (_, i) {
-            final e = employes[i];
-            return ListTile(
-              title: Text(e.nom),
-              subtitle: Text(e.poste),
-              trailing: Text('${e.salaire} CFA'),
-              onTap: () => showDialog(
-                context: context,
-                builder: (_) => EmployeForm(initial: e),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            TextField(
+              decoration: const InputDecoration(
+                labelText: 'Recherche',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
               ),
-            );
-          },
+              onChanged: (v) => setState(() => _search = v),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: employes.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(child: Text('Erreur: $e')),
+                data: (list) => ListView.separated(
+                  itemCount: list.length,
+                  separatorBuilder: (_, __) => const Divider(),
+                  itemBuilder: (_, i) {
+                    final e = list[i];
+                    return ListTile(
+                      title: Text(e.nom),
+                      subtitle: Text(e.poste),
+                      trailing: Wrap(
+                        spacing: 12,
+                        children: [
+                          Text('${e.salaireBase} CFA'),
+                          IconButton(
+                            icon: const Icon(Icons.payments),
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => SalairesScreen(
+                                  employeId: int.parse(e.id),
+                                  employeNom: e.nom,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      onTap: () => showDialog(
+                        context: context,
+                        builder: (_) => EmployeForm(initial: e),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
-  }
-
-  void _navigate(BuildContext context, int index) {
-    final routes = ['/', '/ventes', '/achats', '/clients', '/rapports', '/settings'];
-    context.go(routes[index]);
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../core/api_service.dart';
 import '../models/dashboard_stats.dart';
+import '../core/constants.dart';
+
 
 /// Charge et expose les indicateurs principaux (statistiques tableau de bord).
 class DashboardProvider extends ChangeNotifier {
@@ -16,7 +18,8 @@ class DashboardProvider extends ChangeNotifier {
   Future<void> fetchStats() async {
     _setLoading(true);
     try {
-      final response = await apiService.client.get('/stats/dashboard/');
+      final response = await apiService.client.get(Constants.statsDashboard);
+
       _stats = DashboardStats.fromJson(response.data);
       _error = null;
     } catch (e) {

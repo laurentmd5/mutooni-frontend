@@ -11,9 +11,12 @@ class Constants {
   static const String employes = '/employes/';
   static const String rapports = '/rapports/';
   static const String mouvements = '/mouvements/';
+  static const String transactions = '/transactions/';
 
   // Statistiques
-  static const String statsDashboard = '/stats/dashboard/';
+  static const String statsDashboard = '/dashboard-stats/';
+
+
 
   // Responsive breakpoints
   static const double mobile = 350;

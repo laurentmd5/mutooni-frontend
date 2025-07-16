@@ -13,13 +13,32 @@ class EmployeForm extends ConsumerStatefulWidget {
 
 class _EmployeFormState extends ConsumerState<EmployeForm> {
   final _formKey = GlobalKey<FormState>();
-  late final _nomCtrl = TextEditingController(text: widget.initial?.nom);
-  late final _posteCtrl = TextEditingController(text: widget.initial?.poste);
-  late final _emailCtrl = TextEditingController(text: widget.initial?.email);
-  late final _salaireCtrl = TextEditingController(text: widget.initial?.salaire.toString());
-  late DateTime _dateEmbauche = widget.initial?.dateEmbauche ?? DateTime.now();
+
+  late TextEditingController _nomCtrl;
+  late TextEditingController _posteCtrl;
+  late TextEditingController _salaireCtrl;
+  late DateTime _dateEmbauche;
+  late bool _actif;
 
   bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nomCtrl = TextEditingController(text: widget.initial?.nom ?? '');
+    _posteCtrl = TextEditingController(text: widget.initial?.poste ?? '');
+    _salaireCtrl = TextEditingController(text: widget.initial?.salaireBase ?? '');
+    _dateEmbauche = widget.initial?.dateEmbauche ?? DateTime.now();
+    _actif = widget.initial?.actif ?? true;
+  }
+
+  @override
+  void dispose() {
+    _nomCtrl.dispose();
+    _posteCtrl.dispose();
+    _salaireCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,16 +63,13 @@ class _EmployeFormState extends ConsumerState<EmployeForm> {
               ),
               const SizedBox(height: 12),
               TextFormField(
-                controller: _emailCtrl,
-                decoration: const InputDecoration(labelText: 'Email'),
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
                 controller: _salaireCtrl,
-                decoration: const InputDecoration(labelText: 'Salaire (CFA)*'),
+                decoration: const InputDecoration(labelText: 'Salaire de base (CFA)*'),
                 keyboardType: TextInputType.number,
-                validator: (v) => (v == null || double.tryParse(v) == null) ? 'Invalide' : null,
+                validator: (v) {
+                  final value = double.tryParse(v ?? '');
+                  return (value == null || value < 0) ? 'Salaire invalide' : null;
+                },
               ),
               const SizedBox(height: 12),
               ListTile(
@@ -65,17 +81,26 @@ class _EmployeFormState extends ConsumerState<EmployeForm> {
                     context: context,
                     initialDate: _dateEmbauche,
                     firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
+                    lastDate: DateTime.now(),
                   );
                   if (picked != null) setState(() => _dateEmbauche = picked);
                 },
+              ),
+              const SizedBox(height: 12),
+              SwitchListTile(
+                title: const Text('Actif'),
+                value: _actif,
+                onChanged: (v) => setState(() => _actif = v),
               ),
             ],
           ),
         ),
       ),
       actions: [
-        TextButton(onPressed: _saving ? null : () => Navigator.pop(context), child: const Text('Annuler')),
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.pop(context),
+          child: const Text('Annuler'),
+        ),
         ElevatedButton(
           onPressed: _saving ? null : _submit,
           child: _saving ? const CircularProgressIndicator() : const Text('Enregistrer'),
@@ -92,11 +117,12 @@ class _EmployeFormState extends ConsumerState<EmployeForm> {
       id: widget.initial?.id ?? '',
       nom: _nomCtrl.text,
       poste: _posteCtrl.text,
-      email: _emailCtrl.text,
-      salaire: double.parse(_salaireCtrl.text),
+      salaireBase: _salaireCtrl.text,
       dateEmbauche: _dateEmbauche,
+      actif: _actif,
     );
-    await ref.read(rhProvider.notifier).save(employe, isEdit: widget.initial != null);
+
+    await ref.read(rhControllerProvider.notifier).save(employe, isEdit: widget.initial != null);
     if (mounted) Navigator.pop(context);
   }
 }

@@ -4,7 +4,7 @@ import '../../models/client.dart';
 import '../../providers/client_provider.dart';
 
 class ClientForm extends ConsumerStatefulWidget {
-  final Client? initial;   // null = création, non‑null = édition
+  final Client? initial;
   const ClientForm({super.key, this.initial});
 
   @override
@@ -13,11 +13,11 @@ class ClientForm extends ConsumerStatefulWidget {
 
 class _ClientFormState extends ConsumerState<ClientForm> {
   final _formKey = GlobalKey<FormState>();
-  late final _nomCtrl        = TextEditingController(text: widget.initial?.nom);
-  late final _emailCtrl      = TextEditingController(text: widget.initial?.email);
-  late final _telCtrl        = TextEditingController(text: widget.initial?.telephone);
-  late final _adresseCtrl    = TextEditingController(text: widget.initial?.adresse);
-
+  late final _nomCtrl = TextEditingController(text: widget.initial?.nom);
+  late final _emailCtrl = TextEditingController(text: widget.initial?.email);
+  late final _telCtrl = TextEditingController(text: widget.initial?.telephone);
+  late final _adresseCtrl = TextEditingController(text: widget.initial?.adresse);
+  late final _soldeCtrl = TextEditingController(text: widget.initial?.solde ?? '0.00');
   bool _saving = false;
 
   @override
@@ -53,6 +53,12 @@ class _ClientFormState extends ConsumerState<ClientForm> {
                   controller: _adresseCtrl,
                   decoration: const InputDecoration(labelText: 'Adresse'),
                 ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _soldeCtrl,
+                  decoration: const InputDecoration(labelText: 'Solde initial'),
+                  keyboardType: TextInputType.number,
+                ),
               ],
             ),
           ),
@@ -73,12 +79,12 @@ class _ClientFormState extends ConsumerState<ClientForm> {
     setState(() => _saving = true);
 
     final cli = Client(
-      id: widget.initial?.id ?? '',
+      id: widget.initial?.id ?? 0,
       nom: _nomCtrl.text,
       email: _emailCtrl.text,
       telephone: _telCtrl.text,
       adresse: _adresseCtrl.text,
-      dateInscription: widget.initial?.dateInscription ?? DateTime.now(),
+      solde: _soldeCtrl.text,
     );
     await ref.read(clientProvider.notifier).save(cli, isEdit: widget.initial != null);
     if (mounted) Navigator.pop(context);

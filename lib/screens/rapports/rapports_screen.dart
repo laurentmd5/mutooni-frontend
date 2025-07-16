@@ -12,7 +12,7 @@ class RapportsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final rapports = ref.watch(rapportsProvider);
-    final selectedIndex = 5; // Rapports est à l'index 5
+    final selectedIndex = 6; // Rapports est à l'index 5
 
     return MainLayout(
       selectedIndex: selectedIndex,
@@ -57,7 +57,7 @@ class RapportsScreen extends ConsumerWidget {
   }
 
   void _navigate(BuildContext context, int index) {
-    final routes = ['/', '/ventes', '/achats', '/clients', '/rh', '/settings'];
-    context.go(routes[index]);
+  final routes = ['/', '/ventes', '/achats', '/produits', '/clients', '/rh', '/rapports', '/transactions', '/settings'];
+  if (index < routes.length) context.go(routes[index]);
   }
 }

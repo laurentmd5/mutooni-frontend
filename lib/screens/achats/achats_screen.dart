@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
 import '../../models/achat.dart';
 import '../../providers/achats_provider.dart';
 import '../../widgets/main_layout.dart';
@@ -16,19 +15,25 @@ class AchatsScreen extends ConsumerWidget {
 
     return MainLayout(
       selectedIndex: 2,
-      onItemTap: (i) {
-        switch (i) {
-          case 0: context.go('/'); break;
-          case 1: context.go('/ventes'); break;
-          case 2: context.go('/achats'); break;
-          case 3: context.go('/clients'); break;
-          case 4: context.go('/rh'); break;
-          case 5: context.go('/rapports'); break;
-          case 6: context.go('/settings'); break;
-        }
-      },
+      onItemTap: (i) => _nav(context, i),
       title: 'Gestion des Achats',
       actions: [
+        PopupMenuButton<AchatStatut>(
+          tooltip: 'Filtrer par statut',
+          icon: const Icon(Icons.filter_alt),
+          onSelected: (s) =>
+              ref.read(achatsProvider.notifier).filterByStatut(s),
+          itemBuilder: (_) => AchatStatut.values
+              .map((e) => PopupMenuItem(value: e, child: Text(e.name)))
+              .toList()
+            ..insert(
+              0,
+              const PopupMenuItem(
+                value: AchatStatut.EN_ATTENTE,
+                child: Text('Tous les statuts'),
+              ),
+            ),
+        ),
         IconButton(
           icon: const Icon(Icons.add),
           tooltip: 'Nouvel achat',
@@ -41,94 +46,74 @@ class AchatsScreen extends ConsumerWidget {
       ],
       child: achatsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Erreur de chargement : $err')),
-        data: (achats) => _buildList(context, ref, achats),
+        error: (err, _) => Center(child: Text('Erreur : $err')),
+        data: (achats) => _list(context, ref, achats),
       ),
     );
   }
 
-  Widget _buildList(BuildContext context, WidgetRef ref, List<Achat> achats) {
+  /* ───────── ListView ───────── */
+  Widget _list(
+      BuildContext context, WidgetRef ref, List<Achat> achats) {
     if (achats.isEmpty) {
-      return const Center(child: Text('Aucun achat enregistré'));
+      return const Center(child: Text('Aucun achat trouvé'));
     }
 
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: achats.length,
-      separatorBuilder: (_, __) => const Divider(height: 24),
+      separatorBuilder: (_, __) => const Divider(),
       itemBuilder: (_, i) {
         final a = achats[i];
-        return Card(
-          elevation: 2,
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Colors.orange.shade100,
-              child: const Icon(Icons.shopping_bag, color: Colors.orange),
-            ),
-            title: Text(
-              '${a.montant} CFA',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            subtitle: Text('${a.date.day}/${a.date.month}/${a.date.year}'),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () => showDialog(
-                    context: context,
-                    builder: (_) => AchatForm(initial: a),
-                    barrierDismissible: false,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => _deleteAchat(ref, a.id, context),
-                ),
-              ],
-            ),
+        final date = '${a.date.day}/${a.date.month}/${a.date.year}';
+        return ListTile(
+          leading: const Icon(Icons.shopping_bag, color: Colors.orange),
+          title: Text('${a.total.toStringAsFixed(2)} CFA'),
+          subtitle: Text('Fournisseur: ${a.fournisseur}\n$date'),
+          trailing: Wrap(
+            spacing: 8,
+            children: [
+              Chip(
+                label: Text(a.statut.name),
+                backgroundColor:
+                    a.statut == AchatStatut.PAYE ? Colors.green[100] : null,
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: () => _delete(context, ref, a.id),
+              ),
+            ],
           ),
         );
       },
     );
   }
 
-  Future<void> _deleteAchat(
-    WidgetRef ref,
-    String id,
-    BuildContext outerCtx,
-  ) async {
-    final messenger = ScaffoldMessenger.of(outerCtx); // 🔒 capturé avant await
-    
-    final confirmed = await showDialog<bool>(
-      context: outerCtx,
+  /* ───────── Helpers ───────── */
+
+  Future<void> _delete(
+      BuildContext context, WidgetRef ref, int id) async {
+    final ok = await showDialog<bool>(
+      context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Confirmer suppression'),
-        content: const Text('Voulez‑vous vraiment supprimer cet achat ?'),
+        title: const Text('Supprimer cet achat ?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuler'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Supprimer', style: TextStyle(color: Colors.red)),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Supprimer')),
         ],
       ),
     );
-
-    if (confirmed == true) {
-      try {
-        await ref.read(achatsProvider.notifier).delete(id);
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Achat supprimé avec succès')),
-        );
-      } catch (e) {
-        messenger.showSnackBar(
-          SnackBar(content: Text('Erreur : $e')),
-        );
+    if (ok == true) {
+      await ref.read(achatsProvider.notifier).delete(id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Achat supprimé')));
       }
     }
+  }
+
+  void _nav(BuildContext ctx, int i) {
+    const routes = ['/', '/ventes', '/achats', '/clients', '/rh', '/rapports', '/settings'];
+    ctx.go(routes[i]);
   }
 }

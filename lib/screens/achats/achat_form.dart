@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/achat.dart';
 import '../../providers/achats_provider.dart';
+import '../../models/achat.dart';
 
 class AchatForm extends ConsumerStatefulWidget {
-  final Achat? initial;
-  const AchatForm({super.key, this.initial});
+  const AchatForm({super.key});
 
   @override
   ConsumerState<AchatForm> createState() => _AchatFormState();
@@ -13,60 +12,70 @@ class AchatForm extends ConsumerStatefulWidget {
 
 class _AchatFormState extends ConsumerState<AchatForm> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _montantCtrl;
-  late DateTime _date;
+  final _fournisseurCtrl = TextEditingController();
+  final _totalCtrl = TextEditingController();
+  final _payeCtrl = TextEditingController();
+  AchatStatut _statut = AchatStatut.EN_ATTENTE;
 
   bool _saving = false;
 
   @override
-  void initState() {
-    super.initState();
-    _montantCtrl = TextEditingController(text: widget.initial?.montant.toString() ?? '');
-    _date = widget.initial?.date ?? DateTime.now();
-  }
-
-  @override
   void dispose() {
-    _montantCtrl.dispose();
+    _fournisseurCtrl.dispose();
+    _totalCtrl.dispose();
+    _payeCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.initial == null ? 'Nouvel achat' : 'Modifier achat'),
+      title: const Text('Nouvel achat'),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              /* Fournisseur */
               TextFormField(
-                controller: _montantCtrl,
-                decoration: const InputDecoration(labelText: 'Montant (CFA)*'),
+                controller: _fournisseurCtrl,
+                decoration: const InputDecoration(labelText: 'ID fournisseur*'),
                 keyboardType: TextInputType.number,
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Montant obligatoire';
-                  if (double.tryParse(v) == null) return 'Montant invalide';
-                  return null;
-                },
+                validator: (v) =>
+                    v == null || int.tryParse(v) == null ? 'Requis' : null,
               ),
               const SizedBox(height: 16),
-              ListTile(
-                title: const Text('Date'),
-                subtitle: Text('${_date.day}/${_date.month}/${_date.year}'),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _date,
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                  );
-                  if (picked != null && mounted) {
-                    setState(() => _date = picked);
-                  }
-                },
+              /* Total */
+              TextFormField(
+                controller: _totalCtrl,
+                decoration: const InputDecoration(labelText: 'Total*'),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                validator: (v) => v == null || double.tryParse(v) == null
+                    ? 'Requis'
+                    : null,
+              ),
+              const SizedBox(height: 16),
+              /* Montant payé */
+              TextFormField(
+                controller: _payeCtrl,
+                decoration: const InputDecoration(labelText: 'Montant payé'),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+              ),
+              const SizedBox(height: 16),
+              /* Statut */
+              DropdownButtonFormField<AchatStatut>(
+                value: _statut,
+                decoration: const InputDecoration(labelText: 'Statut'),
+                items: AchatStatut.values
+                    .map((e) => DropdownMenuItem(
+                          value: e,
+                          child: Text(e.name),
+                        ))
+                    .toList(),
+                onChanged: (v) => setState(() => _statut = v!),
               ),
             ],
           ),
@@ -77,10 +86,11 @@ class _AchatFormState extends ConsumerState<AchatForm> {
           onPressed: _saving ? null : () => Navigator.pop(context),
           child: const Text('Annuler'),
         ),
-        ElevatedButton(
+        FilledButton(
           onPressed: _saving ? null : _submit,
-          child: _saving 
-              ? const CircularProgressIndicator() 
+          child: _saving
+              ? const SizedBox(
+                  width: 20, height: 20, child: CircularProgressIndicator())
               : const Text('Enregistrer'),
         ),
       ],
@@ -89,28 +99,19 @@ class _AchatFormState extends ConsumerState<AchatForm> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    
     setState(() => _saving = true);
 
     try {
-      final achat = Achat(
-        id: widget.initial?.id ?? '',
-        montant: double.parse(_montantCtrl.text),
-        date: _date,
-      );
-      
-      await ref.read(achatsProvider.notifier).save(
-        achat, 
-        isEdit: widget.initial != null
-      );
-      
+      await ref.read(achatsProvider.notifier).create(
+            fournisseurId: int.parse(_fournisseurCtrl.text),
+            lignes: const [], // à ajouter si tu gères une table de lignes
+            total: double.parse(_totalCtrl.text),
+            montantPaye: _payeCtrl.text.isEmpty
+                ? 0
+                : double.parse(_payeCtrl.text),
+            statut: _statut,
+          );
       if (mounted) Navigator.pop(context);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: ${e.toString()}')),
-        );
-      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }

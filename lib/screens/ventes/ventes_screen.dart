@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mutooni_frontend/widgets/main_layout.dart';
-import 'package:mutooni_frontend/providers/ventes_provider.dart';
-//import 'package:mutooni_frontend/models/vente.dart';
-import 'vente_form.dart';
 import 'package:go_router/go_router.dart';
-
+import '../../widgets/main_layout.dart';
+import '../../providers/ventes_provider.dart';
+import 'vente_form.dart';
 
 class VentesScreen extends ConsumerWidget {
   const VentesScreen({super.key});
@@ -46,18 +44,22 @@ class VentesScreen extends ConsumerWidget {
                   horizontal: 16,
                 ),
                 leading: CircleAvatar(
-                  backgroundColor: Colors.blue.shade100,
-                  child: const Icon(Icons.point_of_sale, color: Colors.blue),
+                  backgroundColor: Colors.green.shade100,
+                  child: const Icon(Icons.point_of_sale, color: Colors.green),
                 ),
                 title: Text(
-                  '${v.montant} CFA',
+                  '${v.total} CFA',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
                 ),
-                subtitle: Text(
-                  '${v.date.day}/${v.date.month}/${v.date.year}',
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('${v.date.day}/${v.date.month}/${v.date.year}'),
+                    Text('Client: ${v.client}')
+                  ],
                 ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -89,7 +91,7 @@ class VentesScreen extends ConsumerWidget {
     if (index < routes.length) context.go(routes[index]);
   }
 
-  Future<void> _deleteVente(WidgetRef ref, String id) async {
+  Future<void> _deleteVente(WidgetRef ref, int id) async {
     final confirmed = await showDialog<bool>(
       context: ref.context,
       builder: (ctx) => AlertDialog(

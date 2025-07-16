@@ -12,6 +12,10 @@ import '../screens/clients/clients_screen.dart';
 import '../screens/rh/rh_screen.dart';
 import '../screens/rapports/rapports_screen.dart';
 import '../screens/settings/settings_screen.dart';
+import '../screens/transactions/transactions_screen.dart';
+import '../screens/produits/produits_screen.dart';
+
+
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -63,6 +67,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (c, s) => MaterialPage(key: s.pageKey, child: const AchatsScreen()),
       ),
       GoRoute(
+        path: '/produits',
+        name: 'produits',
+        pageBuilder: (c, s) => MaterialPage(key: s.pageKey, child: const ProduitsScreen()),
+      ),
+      GoRoute(
         path: '/clients',
         name: 'clients',
         pageBuilder: (c, s) => MaterialPage(key: s.pageKey, child: const ClientsScreen()),
@@ -76,6 +85,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/rapports',
         name: 'rapports',
         pageBuilder: (c, s) => MaterialPage(key: s.pageKey, child: const RapportsScreen()),
+      ),
+      GoRoute(
+        path: '/transactions',
+        name: 'transactions',
+        pageBuilder: (c, s) => MaterialPage(key: s.pageKey, child: const TransactionsScreen()),
       ),
       GoRoute(
         path: '/settings',

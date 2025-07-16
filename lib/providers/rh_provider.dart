@@ -1,32 +1,29 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/api_service.dart';
 import '../models/employe.dart';
-import '../core/constants.dart';
 
-final rhProvider = AsyncNotifierProvider<RHNotifier, List<Employe>>(RHNotifier.new);
+final rhProvider = FutureProvider.family<List<Employe>, String>((ref, search) async {
+  final res = await apiService.client.get('/employes/', queryParameters: {
+    if (search.isNotEmpty) 'search': search,
+  });
+  return (res.data as List).map((e) => Employe.fromJson(e)).toList();
+});
 
-class RHNotifier extends AsyncNotifier<List<Employe>> {
+final rhControllerProvider = AsyncNotifierProvider<RHController, void>(RHController.new);
+
+class RHController extends AsyncNotifier<void> {
   @override
-  Future<List<Employe>> build() => _fetch();
-
-  Future<List<Employe>> _fetch() async {
-    final res = await apiService.client.get(Constants.employes);
-    return (res.data as List).map((e) => Employe.fromJson(e)).toList();
-  }
+  Future<void> build() async {}
 
   Future<void> save(Employe employe, {bool isEdit = false}) async {
     if (isEdit) {
-      await apiService.client.put('${Constants.employes}/${employe.id}', data: employe.toJson());
+      await apiService.client.put('/employes/${employe.id}/', data: employe.toJson());
     } else {
-      await apiService.client.post(Constants.employes, data: employe.toJson());
+      await apiService.client.post('/employes/', data: employe.toJson());
     }
-    state = const AsyncValue.loading();
-    state = AsyncValue.data(await _fetch());
   }
 
   Future<void> delete(String id) async {
-    await apiService.client.delete('${Constants.employes}/$id');
-    state = const AsyncValue.loading();
-    state = AsyncValue.data(await _fetch());
+    await apiService.client.delete('/employes/$id/');
   }
 }

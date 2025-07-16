@@ -2,35 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mutooni_frontend/widgets/side_menu.dart';
 import 'package:mutooni_frontend/providers/dashboard_provider.dart';
+import 'package:mutooni_frontend/providers/historique_ventes_provider.dart';
+import 'package:mutooni_frontend/models/historique_vente.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => DashboardProvider()..fetchStats(),
-      child: const _DashboardView(),
+    return riverpod.ProviderScope(
+      child: ChangeNotifierProvider(
+        create: (_) => DashboardProvider()..fetchStats(),
+        child: const _DashboardView(),
+      ),
     );
   }
 }
 
-class _DashboardView extends StatefulWidget {
+class _DashboardView extends riverpod.ConsumerStatefulWidget {
   const _DashboardView();
 
   @override
-  State<_DashboardView> createState() => _DashboardViewState();
+  riverpod.ConsumerState<_DashboardView> createState() => _DashboardViewState();
 }
 
-class _DashboardViewState extends State<_DashboardView> {
+class _DashboardViewState extends riverpod.ConsumerState<_DashboardView> {
   int _selected = 0;
 
   @override
   Widget build(BuildContext context) {
     final isDesktop = ResponsiveBreakpoints.of(context).largerThan(TABLET);
     final dp = context.watch<DashboardProvider>();
+    final historique = ref.watch(historiqueVentesProvider);
 
     return Scaffold(
       drawer: isDesktop ? null : Drawer(child: SideMenu(selectedIndex: _selected, onItemTap: _onTap)),
@@ -40,14 +46,14 @@ class _DashboardViewState extends State<_DashboardView> {
           Expanded(
             child: dp.loading
                 ? const Center(child: CircularProgressIndicator())
-                : _body(context, dp),
+                : _body(context, dp, historique),
           ),
         ],
       ),
     );
   }
 
-  Widget _body(BuildContext context, DashboardProvider dp) {
+  Widget _body(BuildContext context, DashboardProvider dp, riverpod.AsyncValue<List<HistoriqueVente>> historique) {
     final stats = dp.stats;
 
     return Padding(
@@ -70,7 +76,7 @@ class _DashboardViewState extends State<_DashboardView> {
           Expanded(
             child: Row(
               children: [
-                Expanded(child: _chartPlaceholder()),
+                Expanded(child: _chartHistoriqueVentes(historique)),
                 const SizedBox(width: 16),
                 Expanded(child: _chartPlaceholder()),
               ],
@@ -96,15 +102,46 @@ class _DashboardViewState extends State<_DashboardView> {
           const SizedBox(height: 8),
           Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          Text('$value',
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text('$value', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           Text(subtitle, style: const TextStyle(color: Colors.grey)),
         ],
       ),
     );
   }
 
-  /// Placeholder chart (démo)
+  Widget _chartHistoriqueVentes(riverpod.AsyncValue<List<HistoriqueVente>> historique) {
+    return historique.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Erreur chargement: $e')),
+      data: (data) {
+        final bars = data.asMap().entries.map((entry) {
+          final i = entry.key;
+          final h = entry.value;
+          return BarChartGroupData(
+            x: i,
+            barRods: [BarChartRodData(toY: h.totalVentes, width: 14)],
+          );
+        }).toList();
+
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: BarChart(
+              BarChartData(
+                barGroups: bars,
+                borderData: FlBorderData(show: false),
+                titlesData: FlTitlesData(
+                  leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true)),
+                  bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _chartPlaceholder() {
     final bars = List.generate(
       6,

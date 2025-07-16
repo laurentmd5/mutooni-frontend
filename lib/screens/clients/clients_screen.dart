@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mutooni_frontend/widgets/main_layout.dart';
 import 'package:mutooni_frontend/providers/client_provider.dart';
-//import 'package:mutooni_frontend/models/client.dart';
 import 'client_form.dart';
 import 'package:go_router/go_router.dart';
-
 
 class ClientsScreen extends ConsumerWidget {
   const ClientsScreen({super.key});
@@ -13,7 +11,7 @@ class ClientsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final clients = ref.watch(clientProvider);
-    final selectedIndex = 3; // Clients est à l'index 3
+    final selectedIndex = 4;
 
     return MainLayout(
       selectedIndex: selectedIndex,
@@ -38,7 +36,20 @@ class ClientsScreen extends ConsumerWidget {
             final c = clients[i];
             return ListTile(
               title: Text(c.nom),
-              subtitle: Text(c.email),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (c.email != null) Text(c.email!),
+                  Text(
+                    'Solde: ${c.solde} CFA',
+                    style: TextStyle(
+                      color: double.tryParse(c.solde) != null && double.parse(c.solde) < 0
+                          ? Colors.red
+                          : Colors.black,
+                    ),
+                  ),
+                ],
+              ),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -63,7 +74,7 @@ class ClientsScreen extends ConsumerWidget {
   }
 
   void _navigate(BuildContext context, int index) {
-    final routes = ['/', '/ventes', '/achats', '/rh', '/rapports', '/settings'];
-    context.go(routes[index]);
+  final routes = ['/', '/ventes', '/achats', '/produits', '/clients', '/rh', '/rapports', '/transactions', '/settings'];
+  if (index < routes.length) context.go(routes[index]);
   }
 }

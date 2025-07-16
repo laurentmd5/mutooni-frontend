@@ -18,9 +18,11 @@ class SideMenu extends StatelessWidget {
       ('Tableau de bord', Icons.dashboard, '/'),
       ('Ventes', Icons.point_of_sale, '/ventes'),
       ('Achats', Icons.shopping_bag, '/achats'),
+      ('Produits', Icons.inventory, '/produits'),
       ('Clients', Icons.people, '/clients'),
       ('RH', Icons.badge, '/rh'),
       ('Rapports', Icons.bar_chart, '/rapports'),
+      ('Transactions', Icons.swap_horiz, '/transactions'),
       ('Paramètres', Icons.settings, '/settings'),
     ];
 

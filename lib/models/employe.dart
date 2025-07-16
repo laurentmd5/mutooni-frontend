@@ -2,36 +2,35 @@ class Employe {
   final String id;
   final String nom;
   final String poste;
-  final String email;
+  final String salaireBase;
   final DateTime dateEmbauche;
-  final double salaire;
+  final bool actif;
 
   Employe({
     required this.id,
     required this.nom,
     required this.poste,
-    required this.email,
+    required this.salaireBase,
     required this.dateEmbauche,
-    required this.salaire,
+    required this.actif,
   });
 
   factory Employe.fromJson(Map<String, dynamic> json) {
     return Employe(
-      id: json['id'],
+      id: json['id'].toString(),
       nom: json['nom'],
       poste: json['poste'],
-      email: json['email'],
+      salaireBase: json['salaire_base'],
       dateEmbauche: DateTime.parse(json['date_embauche']),
-      salaire: json['salaire'].toDouble(),
+      actif: json['actif'] ?? true,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
         'nom': nom,
         'poste': poste,
-        'email': email,
+        'salaire_base': salaireBase,
         'date_embauche': dateEmbauche.toIso8601String(),
-        'salaire': salaire,
+        'actif': actif,
       };
 }

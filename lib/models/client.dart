@@ -1,18 +1,19 @@
+// models/client.dart
 class Client {
-  final String id;
+  final int id;
   final String nom;
-  final String email;
-  final String telephone;
-  final String adresse;
-  final DateTime dateInscription;
+  final String? email;
+  final String? telephone;
+  final String? adresse;
+  final String solde;
 
   Client({
     required this.id,
     required this.nom,
-    required this.email,
-    required this.telephone,
-    required this.adresse,
-    required this.dateInscription,
+    this.email,
+    this.telephone,
+    this.adresse,
+    required this.solde,
   });
 
   factory Client.fromJson(Map<String, dynamic> json) {
@@ -22,16 +23,15 @@ class Client {
       email: json['email'],
       telephone: json['telephone'],
       adresse: json['adresse'],
-      dateInscription: DateTime.parse(json['date_inscription']),
+      solde: json['solde'] ?? '0.00',
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
         'nom': nom,
         'email': email,
         'telephone': telephone,
         'adresse': adresse,
-        'date_inscription': dateInscription.toIso8601String(),
+        'solde': solde,
       };
 }
