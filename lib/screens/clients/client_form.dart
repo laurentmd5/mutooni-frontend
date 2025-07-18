@@ -21,6 +21,16 @@ class _ClientFormState extends ConsumerState<ClientForm> {
   bool _saving = false;
 
   @override
+  void dispose() {
+    _nomCtrl.dispose();
+    _emailCtrl.dispose();
+    _telCtrl.dispose();
+    _adresseCtrl.dispose();
+    _soldeCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(widget.initial == null ? 'Nouveau client' : 'Modifier client'),
@@ -35,29 +45,44 @@ class _ClientFormState extends ConsumerState<ClientForm> {
                 TextFormField(
                   controller: _nomCtrl,
                   decoration: const InputDecoration(labelText: 'Nom*'),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Nom obligatoire' : null,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return 'Nom obligatoire';
+                    if (v.length > 120) return 'Max 120 caractères';
+                    return null;
+                  },
+                  maxLength: 120,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _emailCtrl,
                   decoration: const InputDecoration(labelText: 'Email'),
                   keyboardType: TextInputType.emailAddress,
+                  maxLength: 254,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _telCtrl,
                   decoration: const InputDecoration(labelText: 'Téléphone'),
+                  maxLength: 30,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _adresseCtrl,
                   decoration: const InputDecoration(labelText: 'Adresse'),
+                  maxLines: 2,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _soldeCtrl,
                   decoration: const InputDecoration(labelText: 'Solde initial'),
-                  keyboardType: TextInputType.number,
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return null;
+                    if (!RegExp(r'^-?\d{0,10}(?:\.\d{0,2})?$').hasMatch(v)) {
+                      return 'Format invalide (ex: 123.45)';
+                    }
+                    return null;
+                  },
                 ),
               ],
             ),
@@ -65,10 +90,19 @@ class _ClientFormState extends ConsumerState<ClientForm> {
         ),
       ),
       actions: [
-        TextButton(onPressed: _saving ? null : () => Navigator.pop(context), child: const Text('Annuler')),
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.pop(context),
+          child: const Text('Annuler'),
+        ),
         ElevatedButton(
           onPressed: _saving ? null : _submit,
-          child: _saving ? const CircularProgressIndicator() : const Text('Enregistrer'),
+          child: _saving 
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Enregistrer'),
         ),
       ],
     );
@@ -80,13 +114,21 @@ class _ClientFormState extends ConsumerState<ClientForm> {
 
     final cli = Client(
       id: widget.initial?.id ?? 0,
-      nom: _nomCtrl.text,
-      email: _emailCtrl.text,
-      telephone: _telCtrl.text,
-      adresse: _adresseCtrl.text,
-      solde: _soldeCtrl.text,
+      nom: _nomCtrl.text.trim(),
+      email: _emailCtrl.text.trim().isNotEmpty ? _emailCtrl.text.trim() : null,
+      telephone: _telCtrl.text.trim().isNotEmpty ? _telCtrl.text.trim() : null,
+      adresse: _adresseCtrl.text.trim().isNotEmpty ? _adresseCtrl.text.trim() : null,
+      solde: _soldeCtrl.text.trim(),
     );
-    await ref.read(clientProvider.notifier).save(cli, isEdit: widget.initial != null);
-    if (mounted) Navigator.pop(context);
+
+    try {
+      await ref.read(clientProvider.notifier).save(cli, 
+        isEdit: widget.initial != null,
+        context: context,
+      );
+      if (mounted) Navigator.pop(context);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 }

@@ -20,21 +20,25 @@ class Vente {
   });
 
   factory Vente.fromJson(Map<String, dynamic> json) {
-    return Vente(
-      id: json['id'],
-      client: json['client'],
-      lignes: (json['lignes'] as List)
-          .map((e) => LigneVente.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      date: DateTime.parse(json['date']),
-      total: double.tryParse(json['total'] ?? '0') ?? 0,
-      montantPaye: double.tryParse(json['montant_paye'] ?? '0') ?? 0,
-      modePaiement: json['mode_paiement'] ?? '',
-      statut: VenteStatut.values.firstWhere(
-        (e) => e.name == json['statut'],
-        orElse: () => VenteStatut.enCours,
-      ),
-    );
+    try {
+      return Vente(
+        id: json['id'] as int,
+        client: json['client'] as String,
+        lignes: (json['lignes'] as List)
+            .map((e) => LigneVente.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        date: DateTime.parse(json['date'] as String),
+        total: double.tryParse(json['total']?.toString() ?? '0') ?? 0,
+        montantPaye: double.tryParse(json['montant_paye']?.toString() ?? '0') ?? 0,
+        modePaiement: json['mode_paiement'] as String? ?? '',
+        statut: VenteStatut.values.firstWhere(
+          (e) => e.name.toUpperCase() == (json['statut'] as String?)?.toUpperCase(),
+          orElse: () => VenteStatut.enCours,
+        ),
+      );
+    } catch (e) {
+      throw FormatException('Failed to parse Vente: $e');
+    }
   }
 }
 
@@ -56,14 +60,18 @@ class LigneVente {
   });
 
   factory LigneVente.fromJson(Map<String, dynamic> json) {
-    return LigneVente(
-      id: json['id'],
-      produit: json['produit'],
-      quantite: json['quantite'],
-      prixUnitaire: json['prix_unitaire'],
-      remise: json['remise'],
-      vente: json['vente'],
-    );
+    try {
+      return LigneVente(
+        id: json['id'] as int,
+        produit: json['produit'] as String,
+        quantite: json['quantite'] as String,
+        prixUnitaire: json['prix_unitaire'] as String,
+        remise: json['remise'] as String,
+        vente: json['vente'] as int,
+      );
+    } catch (e) {
+      throw FormatException('Failed to parse LigneVente: $e');
+    }
   }
 }
 
@@ -90,8 +98,8 @@ class VenteRequest {
         'total': total,
         if (montantPaye != null) 'montant_paye': montantPaye,
         if (modePaiement != null) 'mode_paiement': modePaiement,
-        if (statut != null) 'statut': statut!.name,
-      };
+        if (statut != null) 'statut': statut!.name.toUpperCase(),
+      }..removeWhere((key, value) => value == null);
 }
 
 class LigneVenteRequest {

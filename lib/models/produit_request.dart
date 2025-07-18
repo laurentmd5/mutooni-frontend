@@ -20,7 +20,7 @@ class ProduitRequest {
         'nom': nom,
         'unite': unite,
         'prix_unitaire': prixUnitaire,
-        if (seuilMin != null) 'seuil_min': seuilMin,
-        if (stockActuel != null) 'stock_actuel': stockActuel,
+        'seuil_min': seuilMin,
+        'stock_actuel': stockActuel,
       };
 }

@@ -11,40 +11,76 @@ class VentesNotifier extends AsyncNotifier<List<Vente>> {
   Future<List<Vente>> build() => _fetch();
 
   Future<List<Vente>> _fetch({Map<String, String>? query}) async {
-    final res = await apiService.client.get(Constants.ventes, queryParameters: query);
-    return (res.data as List).map((e) => Vente.fromJson(e)).toList();
+    try {
+      final response = await apiService.client.get(
+        Constants.ventes,
+        queryParameters: query,
+      );
+      
+      if (response.data is! List) {
+        throw const FormatException('Expected list of ventes');
+      }
+      
+      return (response.data as List).map((e) => Vente.fromJson(e)).toList();
+    } catch (e) {
+      throw Exception('Failed to load ventes: ${e.toString()}');
+    }
   }
 
   Future<void> create(VenteRequest request) async {
-    await apiService.client.post(Constants.ventes, data: request.toJson());
-    state = await AsyncValue.guard(_fetch);
+    try {
+      state = const AsyncValue.loading();
+      await apiService.client.post(
+        Constants.ventes,
+        data: request.toJson(),
+      );
+      state = await AsyncValue.guard(() => _fetch());
+    } catch (e) {
+      state = AsyncValue.error(e, StackTrace.current);
+      rethrow;
+    }
   }
 
   Future<void> updateVente(int id, VenteRequest request) async {
-    await apiService.client.put('${Constants.ventes}/$id/', data: request.toJson());
-    state = await AsyncValue.guard(_fetch);
+    try {
+      state = const AsyncValue.loading();
+      await apiService.client.put(
+        '${Constants.ventes}/$id/',
+        data: request.toJson(),
+      );
+      state = await AsyncValue.guard(() => _fetch());
+    } catch (e) {
+      state = AsyncValue.error(e, StackTrace.current);
+      rethrow;
+    }
   }
 
   Future<void> delete(int id) async {
-    await apiService.client.delete('${Constants.ventes}/$id/');
-    state = await AsyncValue.guard(_fetch);
+    try {
+      state = const AsyncValue.loading();
+      await apiService.client.delete('${Constants.ventes}/$id/');
+      state = await AsyncValue.guard(() => _fetch());
+    } catch (e) {
+      state = AsyncValue.error(e, StackTrace.current);
+      rethrow;
+    }
   }
 
   Future<void> refresh() async {
-    state = await AsyncValue.guard(_fetch);
+    state = await AsyncValue.guard(() => _fetch());
   }
 
   Future<void> filterByClient(int clientId) async {
-    state = const AsyncLoading();
+    state = const AsyncValue.loading();
     state = await AsyncValue.guard(
       () => _fetch(query: {'client': clientId.toString()}),
     );
   }
 
   Future<void> filterByStatut(VenteStatut statut) async {
-    state = const AsyncLoading();
+    state = const AsyncValue.loading();
     state = await AsyncValue.guard(
-      () => _fetch(query: {'statut': statut.name}),
+      () => _fetch(query: {'statut': statut.name.toUpperCase()}),
     );
   }
 

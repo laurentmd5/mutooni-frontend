@@ -1,63 +1,126 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mutooni_frontend/core/api_service.dart';
-import 'package:mutooni_frontend/core/constants.dart';
-import 'package:mutooni_frontend/models/produit.dart';
-import 'package:mutooni_frontend/models/produit_request.dart';
+import '../core/api_service.dart';
+import '../models/produit.dart';
+import '../models/produit_request.dart';
+
+final produitsProvider = AsyncNotifierProvider<ProduitsNotifier, List<Produit>>(ProduitsNotifier.new);
 
 class ProduitsNotifier extends AsyncNotifier<List<Produit>> {
-  late final _dio;
-
   @override
   Future<List<Produit>> build() async {
-    _dio = ref.read(apiServiceProvider).client;
-    return await _getProduits();
+    return await _fetchProduits();
   }
 
-  Future<List<Produit>> _getProduits() async {
-    final response = await _dio.get(Constants.produits);
-    return (response.data as List)
-        .map((e) => Produit.fromJson(e))
-        .toList();
+  Future<List<Produit>> _fetchProduits({String? search, int? categorieId}) async {
+    try {
+      final params = {
+        if (search != null) 'search': search,
+        if (categorieId != null) 'categorie': categorieId,
+      };
+      final response = await ref.read(apiServiceProvider).client.get(
+        '/produits/',
+        queryParameters: params,
+      );
+      return (response.data as List).map((e) => Produit.fromJson(e)).toList();
+    } catch (e) {
+      throw Exception('Erreur de chargement: ${e.toString()}');
+    }
   }
 
-  Future<Produit> _addProduit(ProduitRequest request) async {
-    final response = await _dio.post(Constants.produits, data: request.toJson());
+  Future<Produit> _createProduit(ProduitRequest request) async {
+    final response = await ref.read(apiServiceProvider).client.post(
+      '/produits/',
+      data: request.toJson(),
+    );
     return Produit.fromJson(response.data);
   }
 
   Future<Produit> _updateProduit(int id, ProduitRequest request) async {
-    final response = await _dio.put('${Constants.produits}$id/', data: request.toJson());
+    final response = await ref.read(apiServiceProvider).client.put(
+      '/produits/$id/',
+      data: request.toJson(),
+    );
     return Produit.fromJson(response.data);
   }
 
   Future<void> _deleteProduit(int id) async {
-    await _dio.delete('${Constants.produits}$id/');
+    await ref.read(apiServiceProvider).client.delete('/produits/$id/');
   }
 
-  /// Action publique : Ajouter un produit
-  Future<void> add(ProduitRequest request) async {
-    final produit = await _addProduit(request);
-    state = AsyncData([...state.value ?? [], produit]);
+  Future<void> addProduit(ProduitRequest request, BuildContext context) async {
+    try {
+      state = const AsyncValue.loading();
+      final newProduit = await _createProduit(request);
+      state = AsyncValue.data([...state.value ?? [], newProduit]);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Produit ajouté avec succès')),
+        );
+      }
+    } catch (e) {
+      state = AsyncValue.error(e, StackTrace.current);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: ${e.toString()}')),
+        );
+      }
+    }
   }
 
-  /// Action publique : Modifier un produit
-  Future<void> updateProduit(int id, ProduitRequest request) async {
-    final updated = await _updateProduit(id, request);
-    state = AsyncData([
-      for (final p in state.value ?? [])
-        if (p.id == id) updated else p
-    ]);
+  Future<void> updateProduit(int id, ProduitRequest request, BuildContext context) async {
+    try {
+      state = const AsyncValue.loading();
+      final updated = await _updateProduit(id, request);
+      state = AsyncValue.data([
+        for (final p in state.value ?? [])
+          if (p.id == id) updated else p
+      ]);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Produit mis à jour')),
+        );
+      }
+    } catch (e) {
+      state = AsyncValue.error(e, StackTrace.current);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: ${e.toString()}')),
+        );
+      }
+    }
   }
 
-  /// Action publique : Supprimer un produit
-  Future<void> delete(int id) async {
-    await _deleteProduit(id);
-    state = AsyncData([
-      for (final p in state.value ?? [])
-        if (p.id != id) p
-    ]);
+  Future<void> deleteProduit(int id, BuildContext context) async {
+    try {
+      state = const AsyncValue.loading();
+      await _deleteProduit(id);
+      state = AsyncValue.data([
+        for (final p in state.value ?? [])
+          if (p.id != id) p
+      ]);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Produit supprimé')),
+        );
+      }
+    } catch (e) {
+      state = AsyncValue.error(e, StackTrace.current);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  Future<void> searchProduits(String query) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() => _fetchProduits(search: query));
+  }
+
+  Future<void> filterByCategory(int? categorieId) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() => _fetchProduits(categorieId: categorieId));
   }
 }
-
-final produitsProvider =
-    AsyncNotifierProvider<ProduitsNotifier, List<Produit>>(ProduitsNotifier.new);

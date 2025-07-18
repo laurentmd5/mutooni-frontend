@@ -26,18 +26,11 @@ class Produit {
       nom: json['nom'],
       unite: json['unite'],
       prixUnitaire: json['prix_unitaire'],
-      seuilMin: json['seuil_min'],
-      stockActuel: json['stock_actuel'],
+      seuilMin: json['seuil_min'] ?? 0,
+      stockActuel: json['stock_actuel'] ?? 0,
     );
   }
 
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'categorie': categorie.toJson(),
-        'nom': nom,
-        'unite': unite,
-        'prix_unitaire': prixUnitaire,
-        'seuil_min': seuilMin,
-        'stock_actuel': stockActuel,
-      };
+  String get formattedPrice => double.tryParse(prixUnitaire)?.toStringAsFixed(2) ?? '0.00';
+  bool get stockLow => stockActuel < seuilMin;
 }

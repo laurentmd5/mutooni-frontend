@@ -1,4 +1,3 @@
-// models/client.dart
 class Client {
   final int id;
   final String nom;
@@ -34,4 +33,6 @@ class Client {
         'adresse': adresse,
         'solde': solde,
       };
+
+  String get formattedSolde => double.tryParse(solde)?.toStringAsFixed(2) ?? '0.00';
 }
